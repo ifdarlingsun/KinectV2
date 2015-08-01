@@ -6,6 +6,11 @@
 #define IR_WIDTH 512
 #define IR_HEIGHT 424
 
+struct Position_str{
+	ofVec2f	pixelPos;
+	ofVec3f worldPos;
+	//CameraSpacePoint csp;
+};
 
 class ofApp : public ofBaseApp{
 
@@ -31,19 +36,21 @@ class ofApp : public ofBaseApp{
 
 		ofShortPixels	depthPixelsRaw;
 		ofFloatPixels	depthPixelsFloats;
+		ofFloatPixels	colorPixelsToWorld;
+		ofFloatImage depthImg;  
 
-		bool isIrDraw;
+		bool isDepthDraw;
 		bool isClicked;
-		int		select;
+		bool isCspUpdate;
+		int	 select;
 
-		vector<ofVec2f> mousePosition;
+		vector<Position_str> position_vec;
 		ofPoint			firstClick;
-		float getDistanceAt(int x, int y);
+		//float getDistanceAt(int x, int y);
 
-		//test
-		ICoordinateMapper * coordinateMapperSB;
-		CameraSpacePoint csp;
-		CameraSpacePoint getDepthToCamera(ofPoint position);
+		//CameraSpacePoint getDepthToCamera(ofPoint position);
+		ofVec3f		getWorldFromColor(ofPoint position);
+
 	//	c++로 그냥 사용해보려고 해봤음
 		/*
 		IDepthFrameSource *depthSourse;
