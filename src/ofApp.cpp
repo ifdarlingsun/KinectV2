@@ -2,7 +2,7 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	//ofSetFullscreen(true);
+	ofSetFullscreen(true);
 	kinect.open();
 	kinect.initDepthSource();
 	kinect.initInfraredSource();
@@ -56,11 +56,16 @@ void ofApp::draw(){
 			else
 				ofSetColor(255,255,255);
 			ofCircle(position_vec[i].pixelPos,2);
-			ofLine(position_vec[i].pixelPos,ofPoint(550,20*i+20));
-			ofDrawBitmapStringHighlight(ofToString(position_vec[i].pixelPos),550,20*i+10);
-			ofDrawBitmapStringHighlight("from Camera : " + ofToString(position_vec[i].worldPos.x) + "/ "
+			ofLine(position_vec[i].pixelPos,ofPoint(880,20*i+20));
+			ofDrawBitmapStringHighlight(ofToString(position_vec[i].pixelPos),880,20*i+20);
+			ofDrawBitmapStringHighlight("from Camera : " + ofToString(-position_vec[i].worldPos.x) + "/ "
 													     + ofToString(position_vec[i].worldPos.y) + "/ "
-														 + ofToString(position_vec[i].worldPos.z),630,20*i+10);
+														 + ofToString(position_vec[i].worldPos.z),960,20*i+20);
+
+			if(position_vec.size() > 3){
+				ofDrawBitmapStringHighlight("Height : " + ofToString( position_vec[0].worldPos.distance(position_vec[1].worldPos))
+											+ " Width :" + ofToString(position_vec[1].worldPos.distance(position_vec[2].worldPos)),930,20+100);
+			}
 		}
 	}
 }
