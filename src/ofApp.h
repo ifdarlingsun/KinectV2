@@ -6,10 +6,13 @@
 #define IR_WIDTH 512
 #define IR_HEIGHT 424
 
+#define READY 0
+#define CROSS 1
+#define VECTOR 2
+
 struct Position_str{
 	ofVec2f	pixelPos;
 	ofVec3f worldPos;
-	//CameraSpacePoint csp;
 };
 
 class ofApp : public ofBaseApp{
@@ -40,20 +43,19 @@ class ofApp : public ofBaseApp{
 		ofFloatImage depthImg;  
 
 		bool isDepthDraw;
-		bool isClicked;
-		bool isCspUpdate;
+		bool isFullscreen;
 		int	 select;
 
 		vector<Position_str> position_vec;
-		ofPoint			firstClick;
-		//float getDistanceAt(int x, int y);
 
-		//CameraSpacePoint getDepthToCamera(ofPoint position);
 		ofVec3f		getWorldFromColor(ofPoint position);
+		ofVec2f		getIntersectionPoint(ofPoint lineA1, ofPoint lineA2,ofPoint lineB1, ofPoint lineB2);
+		ofVec3f		getNormalVector(ofVec3f P, ofVec3f Q, ofVec3f R);
 
-	//	c++로 그냥 사용해보려고 해봤음
-		/*
-		IDepthFrameSource *depthSourse;
-		IDepthFrameReader *depthReader;
-		*/
+		ofVec2f		intersectionPoint;
+		ofVec3f		intersectionWorld;
+		ofVec2f		rightVectorPoint;
+		ofVec3f		rightVectorWorld;
+
+		int mode;
 };

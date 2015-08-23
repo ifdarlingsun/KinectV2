@@ -3,98 +3,177 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 	ofSetFullscreen(true);
+	ofSetVerticalSync(true);
 	kinect.open();
 	kinect.initDepthSource();
 	kinect.initInfraredSource();
 	kinect.initColorSource();
 	isDepthDraw = true;
-	isClicked = true;
+	isFullscreen = true;
 
+	mode = 0;
 	select = 0;
-	//depthPixelsRaw.allocate(IR_WIDTH, IR_HEIGHT, 1);
-
+	
 	colorPixelsToWorld.allocate(1920*3,1080*3,ofPixelFormat::OF_PIXELS_RGB);
 	depthImg.allocate(1920,1080,OF_IMAGE_COLOR);  
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
+	ofSetFullscreen(isFullscreen);
 	this->kinect.update();
 	//getColorToWorldMap을 통해 Color에 맞춰 만든 Depth값을 받아온다.
 	colorPixelsToWorld = kinect.getDepthSource()->getColorToWorldMap();
 
+	switch (mode)
+	{
+		case READY :
+			if(position_vec.size() >= 4){
+				mode = CROSS;
+			}
+			break;
+
+		case CROSS :
+			if(position_vec.size() < 4){
+				mode = READY;
+				break;
+			}
+
+			intersectionPoint = getIntersectionPoint(position_vec[2].pixelPos,position_vec[0].pixelPos,position_vec[3].pixelPos,position_vec[1].pixelPos);
+			intersectionWorld = getWorldFromColor(intersectionPoint);
+
+			if(position_vec.size() >= 5){
+				mode = VECTOR;
+				break;
+			}
+			break;
+
+		case VECTOR :
+			if(position_vec.size() < 5){
+				mode = CROSS;
+				break;
+			}
+
+			rightVectorPoint = position_vec[4].pixelPos;
+			rightVectorWorld =  position_vec[4].worldPos;
+
+			break;
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-	//Depth 소스를 받아서 깊이 값을 보정해준다.(/8000) 그것으로 Depth 이미지도 그림
-	/*
-	ofSetColor(255,255);
-	depthPixelsRaw = this->kinect.getDepthSource()->getPixelsRef();
-	for (int i = 0; i < depthPixelsRaw.size(); i++){
-		depthPixelsRaw[i] = (depthPixelsRaw[i] * 65536 / 8000);
-	}
-	depthImage.setFromPixels(depthPixelsRaw);
-	ofSetColor(255);
-	depthImage.draw(0,0);
-	*/
-
-	ofSetColor(255,255);
+	ofSetColor(150,255);
 	this->kinect.getColorSource()->draw(0,0);
 
-	if(isDepthDraw){
-		ofSetColor(255,255,255,100);
+	if(isDepthDraw)
+		ofSetColor(10,10,10,100);
+	else
+		ofSetColor(255,255,255,200);
 		depthImg.setFromPixels(colorPixelsToWorld.getPixels(),1920,1080,OF_IMAGE_COLOR);
 		depthImg.draw(0,0,1920,1080);
-	}
 
-	//마우스로 선택한 곳의 값을 출력함
-	if(position_vec.size() > 0){
-		for(int i=0; i<position_vec.size(); i++){
-			if(i == select)
-				ofSetColor(0,255,0);
-			else
-				ofSetColor(255,255,255);
-			ofCircle(position_vec[i].pixelPos,2);
-			ofLine(position_vec[i].pixelPos,ofPoint(880,20*i+20));
-			ofDrawBitmapStringHighlight(ofToString(position_vec[i].pixelPos),880,20*i+20);
-			ofDrawBitmapStringHighlight("from Camera : " + ofToString(-position_vec[i].worldPos.x) + "/ "
-													     + ofToString(position_vec[i].worldPos.y) + "/ "
-														 + ofToString(position_vec[i].worldPos.z),960,20*i+20);
+	ofSetColor(255,255);
+	ofDrawBitmapStringHighlight("frame : " + ofToString(ofGetFrameRate()),0,10);
 
-			if(position_vec.size() > 3){
-				ofDrawBitmapStringHighlight("Height : " + ofToString( position_vec[0].worldPos.distance(position_vec[1].worldPos))
-											+ " Width :" + ofToString(position_vec[1].worldPos.distance(position_vec[2].worldPos)),930,20+100);
+	switch (mode)
+	{
+		case READY :
+			if(position_vec.size() > 0){
+				for(int i=0; i<position_vec.size(); i++){
+					if(i == select){
+						ofSetColor(0,255,0);
+						ofCircle(position_vec[i].pixelPos,5);
+					}else{
+						ofSetColor(255,255,255);
+						ofCircle(position_vec[i].pixelPos,2);
+					}
+				}
 			}
-		}
+								
+			break;
+
+		case CROSS :
+			for(int i=0; i<position_vec.size(); i++){
+				if(i == select){
+					ofSetColor(0,255,0);
+					ofCircle(position_vec[i].pixelPos,5);
+				}else{
+					ofSetColor(255,255,255);
+					ofCircle(position_vec[i].pixelPos,2);
+				}
+			}
+
+			ofSetColor(0,255,0,150);
+			ofSetLineWidth(0.5);
+			ofLine(position_vec[0].pixelPos,position_vec[2].pixelPos);
+			ofLine(position_vec[1].pixelPos,position_vec[3].pixelPos);
+			ofCircle(intersectionPoint,3);
+			
+			ofDrawBitmapStringHighlight("display center : " + ofToString(intersectionWorld),0,30);
+
+			break;
+
+		case VECTOR :
+			for(int i=0; i<position_vec.size(); i++){
+				if(i == select){
+					ofSetColor(0,255,0);
+					ofCircle(position_vec[i].pixelPos,5);
+				}else{
+					ofSetColor(255,255,255);
+					ofCircle(position_vec[i].pixelPos,2);
+				}
+			}
+
+			ofSetColor(255,255,255,150);
+			ofSetLineWidth(0.5);
+			ofLine(position_vec[0].pixelPos,position_vec[2].pixelPos);
+			ofLine(position_vec[1].pixelPos,position_vec[3].pixelPos);
+			ofCircle(intersectionPoint,3);
+
+			ofLine(intersectionPoint,position_vec[4].pixelPos);
+			
+			ofDrawBitmapStringHighlight("display center : " + ofToString(intersectionWorld),0,30);
+			ofDrawBitmapStringHighlight("right vector : " + ofToString(rightVectorWorld),0,50);
+			break;
 	}
 }
-
-/*
-//--depth 소스의 x,y 좌표를 선택하면 해당 깊이 값을 리턴해주는 함수
-float ofApp::getDistanceAt(int x, int y) {
-	return depthPixelsRaw[y * IR_WIDTH + x]; 
-}
-*/
-
-/*
-//--마우스를 선택한 곳의 MapDepthPointToCameraSpace 값을 리턴해주는 함수
-CameraSpacePoint ofApp::getDepthToCamera(ofPoint position){
-	CameraSpacePoint csp;
-	DepthSpacePoint dsp;
-	dsp.X = position.x;
-	dsp.Y =	position.y;
-	kinect.getDepthSource()->coordinateMapper->MapDepthPointToCameraSpace(dsp,getDistanceAt(position.x,position.y),&csp);
-	
-	return csp;
-}
-*/
 
 //depthImg에서 선택한 R,G,B는 각각 월드 좌표의 X,Y,Z이다. 그 값을 리턴해줌.
 ofVec3f ofApp::getWorldFromColor(ofPoint position){
-	ofVec3f colorToWorld;
-	colorToWorld = ofVec3f(depthImg.getColor(position.x,position.y).r,depthImg.getColor(position.x,position.y).g,depthImg.getColor(position.x,position.y).b);
-	return colorToWorld;
+	ofVec3f _colorToWorld;
+	_colorToWorld = ofVec3f(depthImg.getColor(position.x,position.y).r,depthImg.getColor(position.x,position.y).g,depthImg.getColor(position.x,position.y).b);
+	return _colorToWorld;
+}
+
+//법선벡터 구하는 것
+ofVec3f ofApp::getNormalVector(ofVec3f P, ofVec3f Q, ofVec3f R){
+	ofVec3f PQ,PR;
+	ofVec3f _normalVector;
+	PQ = Q-P;
+	PR = R-P;
+
+	_normalVector = PQ.cross(PR);
+	return _normalVector;
+}
+
+//교차점 구하는 것 
+ofVec2f ofApp::getIntersectionPoint(ofPoint lineA1, ofPoint lineA2,ofPoint lineB1, ofPoint lineB2){
+	//line1 : y = Ax + B
+	//line2 : y = Cx + D
+	ofVec2f _intersectionPoint;
+	double A,B,C,D;
+
+	A = (lineA2.y - lineA1.y)/(lineA2.x - lineA1.x);
+	B = lineA1.y - ((lineA2.y - lineA1.y)/(lineA2.x - lineA1.x))*lineA1.x;
+
+	C = (lineB2.y - lineB1.y)/(lineB2.x - lineB1.x);
+	D = lineB1.y - ((lineB2.y - lineB1.y)/(lineB2.x - lineB1.x))*lineB1.x;
+
+	_intersectionPoint.x = (D-B)/(A-C);
+	_intersectionPoint.y = A*_intersectionPoint.x + B;
+
+	return _intersectionPoint;
 }
 
 //--------------------------------------------------------------
@@ -113,8 +192,24 @@ void ofApp::keyPressed(int key){
 		case 'u' :
 			if(position_vec.size() > 0){
 				position_vec[select].worldPos = getWorldFromColor(position_vec[select].pixelPos);
+				if(mode == CROSS){
+					intersectionPoint = getIntersectionPoint(position_vec[2].pixelPos,position_vec[0].pixelPos,position_vec[3].pixelPos,position_vec[1].pixelPos);
+					intersectionWorld = getWorldFromColor(intersectionPoint);
+				}else if(mode == VECTOR){
+					intersectionPoint = getIntersectionPoint(position_vec[2].pixelPos,position_vec[0].pixelPos,position_vec[3].pixelPos,position_vec[1].pixelPos);
+					intersectionWorld = getWorldFromColor(intersectionPoint);
+
+					rightVectorPoint = position_vec[4].pixelPos;
+					rightVectorWorld =  position_vec[4].worldPos;
+				}
 			}
 			break;
+
+
+		case 'f':
+			isFullscreen = !isFullscreen;
+			break;
+
 
 		case OF_KEY_UP :
 			if(position_vec.size() > 0){
@@ -158,24 +253,19 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-	//TODO : 드래그 넣어 보는 중
-	//mousePosition[select] += ofVec2f(x-firstClick.x,y-firstClick.y);
-	//cout <<x-firstClick.x << endl;
+	
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-	isClicked = true;	
 	if(button == 0){
 		Position_str tmp;
-
-		firstClick = ofPoint(x,y);
 		tmp.pixelPos = ofVec2f(mouseX,mouseY);
 		tmp.worldPos = getWorldFromColor(tmp.pixelPos);
 
  		position_vec.push_back(tmp);
-		if(position_vec.size() == 1)
-			select = 0;
+		if(position_vec.size() > 1)
+			select = position_vec.size()-1;
 	}else{ 
 		if(position_vec.size() > 0){
 			position_vec.erase(position_vec.begin()+select);
@@ -188,7 +278,7 @@ void ofApp::mousePressed(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-	isClicked = false;
+
 }
 
 //--------------------------------------------------------------
